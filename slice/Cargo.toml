@@ -1,0 +1,13 @@
+[package]
+name = "tpt-slice"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Toolpath generation for TPT BioCAD"
+
+[dependencies]
+tpt-core = { path = "../core" }
+tpt-geometry = { path = "../geometry" }
+tpt-fluid = { path = "../fluid" }
+nalgebra = "0.33"
+thiserror = "2.0"

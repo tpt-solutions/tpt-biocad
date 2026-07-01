@@ -1,0 +1,18 @@
+[package]
+name = "tpt-ui"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Tauri-based UI for TPT BioCAD"
+
+[build-dependencies]
+tauri-build = "2.0"
+
+[dependencies]
+tauri = { version = "2.0", features = ["api-all"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tpt-core = { path = "../core" }
+tpt-geometry = { path = "../geometry" }
+tpt-fluid = { path = "../fluid" }
+tpt-slice = { path = "../slice" }

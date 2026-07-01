@@ -1,0 +1,121 @@
+Design Document: TPT BioCAD
+Document Status: Draft / Proposal
+Date: Wednesday, July 01, 2026
+Project Name: TPT BioCAD
+License: Apache License 2.0
+Authors: [Your Name/Team]
+1. Executive Summary
+TPT BioCAD is an open-source, unified Computer-Aided Design (CAD) and slicing software platform specifically engineered for bioprinting and food printing. Unlike traditional slicers optimized for thermoplastic FDM/FFF printing, TPT BioCAD natively integrates a computational fluid dynamics (CFD) and rheology solver. This allows users to simulate, optimize, and control the extrusion of complex, non-Newtonian, viscoelastic, and shear-thinning fluids (bio-inks, hydrogels, food pastes, and doughs) prior to and during the physical print.
+2. Motivation & Problem Statement
+Current open-source slicing software (e.g., Cura, PrusaSlicer) assumes materials are thermoplastics that melt and solidify purely based on temperature. Bioprinting and food printing rely on fundamentally different physical principles:
+Bio-inks (e.g., alginate, gelatin methacryloyl) are shear-thinning, often require coaxial cross-linking (e.g., calcium chloride bath), and must maintain cell viability (strict pressure/temperature limits).
+Food materials (e.g., chocolate, cookie dough, purees) exhibit yield stress, viscoelasticity, and complex temperature-dependent phase changes (e.g., chocolate tempering).
+There is a lack of accessible, open-source software that bridges the gap between geometric CAD design, fluid rheology simulation, and hardware control for these specific domains. TPT BioCAD solves this by treating the "material" as a dynamic fluid system rather than a static thermal profile.
+3. Goals and Non-Goals
+Goals
+Provide a unified UI for CAD design, toolpath generation, and fluid simulation.
+Implement a robust Fluid & Rheology Solver capable of modeling non-Newtonian fluids, yield stress, and curing kinetics.
+Generate hardware-agnostic G-code (and custom firmware commands) for pneumatic, piston, and screw-based extruders.
+Maintain a 100% open-source codebase under the Apache License 2.0 to encourage academic and commercial adoption.
+Support multi-material and multi-nozzle printing (e.g., structural support + bio-ink).
+Provide safety interlocks that flag or abort a print plan when computed shear stress or thermal exposure exceeds user-configurable material safety thresholds.
+Non-Goals
+Medical Device Certification: TPT BioCAD is a research and development tool. It does not provide FDA/CE compliance for clinical bioprinting.
+General Purpose CFD: The solver is strictly reduced-order and optimized for extrusion-based additive manufacturing, not general-purpose fluid dynamics (like ANSYS Fluent).
+Risks & Assumptions
+Team & Timeline: This project is being developed solo, part-time. The 12-month roadmap (Section 8) spans a custom CFD/rheology solver, a full B-Rep CAD kernel, a firmware fork, and 5-axis toolpath generation — each of which is independently a substantial undertaking. The roadmap is kept as-is by intent, but phases should be expected to slip without additional contributors.
+Hardware & Validation: No physical printer or rheometer is available during early development. Rheology solver accuracy is validated against published literature data and closed-form analytical solutions (see Section 5.2 Validation Strategy) rather than real hardware, until a physical setup is acquired.
+CAD Kernel Maturity: opencascade-rs bindings are less mature than the underlying C++ OpenCASCADE library. Full B-Rep support (Section 7) is a hard requirement for this project, but initial integration should be treated as a de-risking spike rather than a solved dependency.
+Licensing: OpenCASCADE is distributed under LGPL-2.1 with a static-linking exception, which is compatible with dynamic/static linkage from an Apache 2.0 codebase as a dependency. This should be reconfirmed before any binary distribution.
+Simulation Accuracy Disclaimer: Cell viability and food safety predictions from the solver are simulation estimates based on modeled physics, not guarantees — consistent with the Non-Goal that this is not a certified medical device.
+4. High-Level Architecture
+TPT BioCAD is built on a modular, micro-kernel-inspired architecture to separate the heavy physics computations from the UI and hardware I/O.
++-------------------------------------------------------------+
+|                    TPT BioCAD UI (Frontend)                 |
+|  [CAD Viewport]  [Rheology Params]  [Simulation Viz]        |
++-------------------------------------------------------------+
+          | JSON/RPC (gRPC or local REST)       |
++-------------------------------------------------------------+
+|                  TPT Core Engine (Backend)                  |
+|                                                             |
+|  +----------------+  +----------------+  +---------------+  |
+|  |  TPT-Geometry  |  |  TPT-Fluid     |  |  TPT-Slice    |  |
+|  |  (Mesh/Lattice)|  |  (Rheology/CFD)|  |  (Toolpath)   |  |
+|  +----------------+  +----------------+  +---------------+  |
+|                                                             |
++-------------------------------------------------------------+
+          | G-code / Serial / TCP/IP            |
++-------------------------------------------------------------+
+|              Hardware Abstraction Layer (HAL)               |
+|  [Pneumatic Ctrl] [Piston Ctrl] [Temp/UV Ctrl] [Sensors]   |
++-------------------------------------------------------------+
+5. Core Modules
+5.1 TPT-Geometry (CAD & Mesh Processing)
+Standard Mesh Import/Export: STL, OBJ, 3MF.
+Parametric Lattice Generator: Crucial for bioprinting. Generates internal porous scaffolds (gyroid, honeycomb, custom Voronoi) with variable pore sizes to control nutrient diffusion.
+Mesh Repair: Auto-fixing non-manifold edges, specifically tailored for the lower resolution requirements of hydrogel extrusion.
+5.2 TPT-Fluid (Physics & Rheology Solver)
+This is the core differentiator of TPT BioCAD.
+Instead of simple "flow rate" multipliers, TPT-Fluid solves for the actual physics of the material.
+Rheological Models: Implements empirical models for complex fluids:
+Carreau-Yasuda model for shear-thinning bio-inks.
+Herschel-Bulkley model for yield-stress food pastes (e.g., dough).
+Bingham plastic model for chocolate.
+Extrusion Solver (1D Pipe Flow): Calculates the required pressure (pneumatic) or piston force/velocity to achieve a target volumetric flow rate through a specific nozzle geometry (tapered, coaxial), accounting for wall slip and fluid viscosity.
+Deposition & Slumping Simulator (3D Voxel): A simplified, real-time physics simulation that predicts how the extruded bead will spread or slump on the previous layer based on the material's yield stress and the print speed.
+Curing/Kinetics Engine: Models UV cross-linking (for GelMA) or thermal setting (for chocolate/agar), adjusting print speeds dynamically to ensure the material sets before the next layer is applied.
+Safety Interlocks: Flags or aborts a print plan when computed shear stress (nozzle wall) or thermal exposure exceeds a user-configurable, per-material safety threshold, protecting cell viability and material integrity (see Goals, Section 3).
+Validation Strategy: In the absence of physical hardware and a rheometer, the solver is validated in two ways: (1) unit tests against closed-form analytical solutions where they exist (e.g., Newtonian and power-law Poiseuille pipe flow, Herschel-Bulkley plug flow); and (2) regression tests that fit Carreau-Yasuda, Herschel-Bulkley, and Bingham model parameters against published rheometer curves for the materials already listed in the Material Database (Section 6.2), with explicit curve-fit acceptance thresholds (e.g., R²). This validation suite is a required deliverable of Phase 2 (Section 8), not an afterthought.
+5.3 TPT-Slice (Toolpath Generation)
+Translates geometry and fluid parameters into machine movements.
+Dynamic Flow Compensation: Adjusts E-axis (extrusion) or pneumatic pressure on the fly based on nozzle acceleration, preventing under-extrusion at corners.
+Multi-Axis Support: 5-axis toolpath generation for printing on curved mandrels (common in vascular bioprinting).
+5.4 Hardware Abstraction Layer (HAL)
+Standard G-code: Compatible with Marlin, Klipper, and RepRapFirmare. Klipper is the primary, actively-supported target (see 5.5); Marlin/RepRapFirmware support for the extended commands is a later, community-contributed target once the command set is proven on Klipper.
+Extended Bio/Food Commands:
+M300 S<pressure> P<time>: Pneumatic pressure control.
+M301 T<temp> R<ramp_rate>: Advanced thermal profiling (for chocolate tempering).
+M302 U<uv_intensity> T<time>: UV curing control.
+M303: Coaxial cross-linker flow control.
+5.5 Firmware Extension (Klipper)
+Implementing M300-M303 requires firmware-side support, which is in scope for this project. Klipper is targeted first because its Python-based `klippy` host software is plugin-extensible without recompiling or re-flashing MCU firmware, making it far more tractable for a solo maintainer than forking Marlin's C++ codebase.
+Approach: ship a Klipper Python plugin (`klippy` extra) that registers the M300-M303 G-code commands and maps them onto Klipper's existing primitives (PWM outputs, heater control, output pins) rather than inventing a new MCU-side protocol.
+Marlin and RepRapFirmware forks remain open for community contribution once the Klipper implementation has validated the command set in practice.
+6. Data Models & File Formats
+6.1 The .tpt Project File
+A unified project format: a zip archive (following the same pattern as .3mf and .fcstd) containing the following human-readable JSON members:
+geometry.json: B-rep or mesh data.
+material.json: Rheological parameters (viscosity curves, yield stress, curing rates).
+machine.json: Printer kinematics, nozzle diameters, extruder types.
+profile.json: Slicing parameters and simulation results.
+6.2 Material Database
+A built-in, open-source library of pre-characterized materials.
+Bio: Alginate (various concentrations), GelMA, Pluronic F-127, Fibrin.
+Food: Dark/Milk/White Chocolate, Shortbread dough, Tomato puree, Mashed potato.
+Users can input their own rheometer data (CSV) to generate custom material profiles.
+7. Technology Stack
+To ensure high performance for the fluid solver and cross-platform compatibility, the following stack is proposed:
+Core Engine & Solver: Rust. Chosen for memory safety, zero-cost abstractions, and high performance in mathematical computations.
+CAD Geometry Kernel: C++ utilizing OpenCASCADE (via Rust bindings like opencascade-rs) for robust B-Rep and lattice generation.
+Math/Physics Libraries: nalgebra and ndarray (Rust) for matrix operations and CFD grid calculations.
+User Interface: Tauri (Rust backend + Web frontend using React/Svelte) OR Qt/C++ if a more traditional desktop CAD feel is preferred. (Recommendation: Tauri for faster UI iteration and modern look).
+Hardware I/O: tokio-serial (Rust) for asynchronous, non-blocking serial communication with printers.
+8. Roadmap & Milestones
+Phase 1: Foundation (Months 1-3)
+Initialize repository, set up CI/CD, and apply Apache 2.0 licensing.
+Implement basic UI shell and STL import/export.
+Develop basic 3-axis slicer for standard thermoplastics (baseline).
+Phase 2: The Fluid Solver (Months 4-7)
+Implement Carreau-Yasuda and Herschel-Bulkley rheological models.
+Build the 1D extrusion pressure/flow solver.
+Integrate material database and UI for rheology parameter input.
+Build the solver validation suite: analytical-solution unit tests and literature-curve regression fits (see Section 5.2 Validation Strategy).
+Phase 3: Bioprinting Specifics (Months 8-10)
+Implement parametric lattice/scaffold generator.
+Add UV curing and coaxial needle toolpath support.
+Develop "slumping" visualization overlay in the UI.
+Phase 4: Food Printing & Hardware (Months 11-12)
+Implement thermal profiling algorithms (tempering curves).
+Finalize HAL for pneumatic and screw-based extruders.
+Implement Klipper plugin for M300-M303 (see Section 5.5).
+Beta release and community testing.

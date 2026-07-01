@@ -1,0 +1,16 @@
+[package]
+name = "tpt-fluid"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Rheology and fluid dynamics solver for TPT BioCAD"
+
+[dependencies]
+tpt-core = { path = "../core" }
+nalgebra = "0.33"
+ndarray = "0.16"
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+approx = "0.5"

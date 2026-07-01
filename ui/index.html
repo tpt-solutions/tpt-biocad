@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TPT BioCAD</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00d4ff;
+        }
+        .panel {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #00d4ff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00a8cc;
+        }
+        input, select {
+            background: #0f3460;
+            border: 1px solid #00d4ff;
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        .material-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .material-item {
+            background: #0f3460;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .material-item:hover {
+            background: #00d4ff;
+            color: #1a1a2e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TPT BioCAD</h1>
+        
+        <div class="panel">
+            <h2>Material Selection</h2>
+            <div id="materials" class="material-list">
+                Loading materials...
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h2>Rheology Calculator</h2>
+            <div>
+                <label>Shear Rate (1/s): <input type="number" id="shear-rate" value="100"></label>
+            </div>
+            <div>
+                <label>Flow Rate (mm³/s): <input type="number" id="flow-rate" value="100"></label>
+            </div>
+            <div>
+                <label>Nozzle Diameter (mm): <input type="number" id="nozzle-diameter" value="0.4" step="0.1"></label>
+            </div>
+            <button onclick="calculate()">Calculate</button>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Load materials on startup
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const materials = await window.__TAURI__.invoke('get_materials');
+                document.getElementById('materials').innerHTML = materials.map(m => 
+                    `<div class="material-item" onclick="selectMaterial('${m}')">${m}</div>`
+                ).join('');
+            } catch (e) {
+                document.getElementById('materials').innerHTML = 'Error loading materials';
+            }
+        });
+
+        let selectedMaterial = null;
+
+        function selectMaterial(material) {
+            selectedMaterial = material;
+            document.querySelectorAll('.material-item').forEach(el => {
+                el.style.border = el.textContent === material ? '2px solid #00d4ff' : 'none';
+            });
+        }
+
+        async function calculate() {
+            if (!selectedMaterial) {
+                alert('Please select a material first');
+                return;
+            }
+
+            const shearRate = parseFloat(document.getElementById('shear-rate').value);
+            const flowRate = parseFloat(document.getElementById('flow-rate').value);
+            const nozzleDiameter = parseFloat(document.getElementById('nozzle-diameter').value);
+
+            try {
+                const viscosity = await window.__TAURI__.invoke('calculate_viscosity', {
+                    materialName: selectedMaterial,
+                    shearRate: shearRate
+                });
+
+                const pressure = await window.__TAURI__.invoke('calculate_pressure', {
+                    materialName: selectedMaterial,
+                    flowRate: flowRate,
+                    nozzleDiameter: nozzleDiameter
+                });
+
+                document.getElementById('results').innerHTML = `
+                    <h3>Results for ${selectedMaterial}</h3>
+                    <p>Viscosity at γ̇=${shearRate}: ${viscosity.toFixed(4)} Pa·s</p>
+                    <p>Pressure drop: ${pressure.pressureDrop.toFixed(2)} Pa</p>
+                    <p>Wall shear stress: ${pressure.wallShearStress.toFixed(2)} Pa</p>
+                `;
+            } catch (e) {
+                document.getElementById('results').innerHTML = `<p style="color: red;">Error: ${e}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+[package]
+name = "tpt-geometry"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "CAD and mesh processing for TPT BioCAD"
+
+[dependencies]
+tpt-core = { path = "../core" }
+nalgebra = "0.33"
+thiserror = "2.0"
+byteorder = "1.5"
+
+# For STL import/export
+# Note: opencascade-rs will be added later for B-Rep support
+# stl_io = "0.7"
