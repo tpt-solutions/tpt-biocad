@@ -3,12 +3,40 @@
 
 use serde::{Deserialize, Serialize};
 
+/// UV curing parameters for photo-crosslinkable bio-inks (e.g., GelMA).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CuringParams {
+    /// UV intensity (W/m²).
+    pub uv_intensity: f64,
+    /// Exposure time per layer (seconds).
+    pub exposure_time: f64,
+    /// Wavelength (nm), typically 365 for GelMA.
+    pub wavelength: f64,
+}
+
+/// Coaxial needle parameters for dual-channel extrusion.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CoaxialParams {
+    /// Name of the cross-linker material (e.g., "CaCl₂").
+    pub crosslinker_name: String,
+    /// Cross-linker-to-bioink volumetric flow ratio.
+    pub flow_ratio: f64,
+    /// Cross-linker concentration (mol/L).
+    pub concentration: f64,
+}
+
 /// Material rheological parameters
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Material {
     pub name: String,
     pub density: f64, // kg/m³
     pub rheology: RheologyModel,
+    /// UV curing parameters, if the material requires photo-crosslinking.
+    #[serde(default)]
+    pub curing: Option<CuringParams>,
+    /// Coaxial needle parameters, if the material requires dual-channel extrusion.
+    #[serde(default)]
+    pub coaxial: Option<CoaxialParams>,
 }
 
 /// Rheological model types
@@ -16,27 +44,27 @@ pub struct Material {
 pub enum RheologyModel {
     /// Newtonian fluid: viscosity is constant
     Newtonian { viscosity: f64 }, // Pa·s
-    
+
     /// Carreau-Yasuda model for shear-thinning bio-inks
     CarreauYasuda {
-        eta_zero: f64,     // Zero-shear viscosity (Pa·s)
-        eta_inf: f64,      // Infinite-shear viscosity (Pa·s)
-        lambda: f64,       // Time constant (s)
-        a: f64,            // Yasuda parameter (dimensionless)
-        n: f64,            // Power-law index (dimensionless)
+        eta_zero: f64, // Zero-shear viscosity (Pa·s)
+        eta_inf: f64,  // Infinite-shear viscosity (Pa·s)
+        lambda: f64,   // Time constant (s)
+        a: f64,        // Yasuda parameter (dimensionless)
+        n: f64,        // Power-law index (dimensionless)
     },
-    
+
     /// Herschel-Bulkley model for yield-stress food pastes
     HerschelBulkley {
-        tau_yield: f64,    // Yield stress (Pa)
-        k: f64,            // Consistency (Pa·s^n)
-        n: f64,            // Power-law index (dimensionless)
+        tau_yield: f64, // Yield stress (Pa)
+        k: f64,         // Consistency (Pa·s^n)
+        n: f64,         // Power-law index (dimensionless)
     },
-    
+
     /// Bingham plastic model for chocolate
     Bingham {
-        tau_yield: f64,    // Yield stress (Pa)
-        mu_p: f64,         // Plastic viscosity (Pa·s)
+        tau_yield: f64, // Yield stress (Pa)
+        mu_p: f64,      // Plastic viscosity (Pa·s)
     },
 }
 

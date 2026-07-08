@@ -65,14 +65,14 @@
 <body>
     <div class="container">
         <h1>TPT BioCAD</h1>
-        
+
         <div class="panel">
             <h2>Material Selection</h2>
             <div id="materials" class="material-list">
                 Loading materials...
             </div>
         </div>
-        
+
         <div class="panel">
             <h2>Rheology Calculator</h2>
             <div>
@@ -86,6 +86,25 @@
             </div>
             <button onclick="calculate()">Calculate</button>
             <div id="results"></div>
+        </div>
+
+        <div class="panel">
+            <h2>Slumping Predictor</h2>
+            <div>
+                <label>Bead Width (mm): <input type="number" id="bead-width" value="0.4" step="0.1"></label>
+            </div>
+            <div>
+                <label>Bead Height (mm): <input type="number" id="bead-height" value="0.2" step="0.1"></label>
+            </div>
+            <div>
+                <label>Print Speed (mm/s): <input type="number" id="print-speed" value="10" step="1"></label>
+            </div>
+            <div>
+                <label>Layer Time (s): <input type="number" id="layer-time" value="1.0" step="0.5"></label>
+            </div>
+            <button onclick="calculateSlump()">Predict Slumping</button>
+            <div id="slump-results"></div>
+            <canvas id="slump-canvas" width="400" height="200" style="display:none; margin-top:10px; border:1px solid #333;"></canvas>
         </div>
     </div>
 
@@ -142,6 +161,102 @@
             } catch (e) {
                 document.getElementById('results').innerHTML = `<p style="color: red;">Error: ${e}</p>`;
             }
+        }
+
+        async function calculateSlump() {
+            if (!selectedMaterial) {
+                alert('Please select a material first');
+                return;
+            }
+
+            const width = parseFloat(document.getElementById('bead-width').value);
+            const height = parseFloat(document.getElementById('bead-height').value);
+            const speed = parseFloat(document.getElementById('print-speed').value);
+            const layerTime = parseFloat(document.getElementById('layer-time').value);
+
+            try {
+                const result = await window.__TAURI__.invoke('calculate_slump', {
+                    materialName: selectedMaterial,
+                    initialWidth: width,
+                    initialHeight: height,
+                    printSpeed: speed,
+                    layerTime: layerTime,
+                });
+
+                const pct = (result.slumpFactor * 100).toFixed(1);
+                document.getElementById('slump-results').innerHTML = `
+                    <h3>Slump Prediction for ${selectedMaterial}</h3>
+                    <p>Slump factor: ${pct}%</p>
+                    <p>Width: ${width.toFixed(2)} mm → ${result.widthAfter.toFixed(2)} mm</p>
+                    <p>Height: ${height.toFixed(2)} mm → ${result.heightAfter.toFixed(2)} mm</p>
+                    <p>Settling time: ${result.settlingTime === Infinity ? '∞ (no slump)' : result.settlingTime.toFixed(2) + ' s'}</p>
+                `;
+
+                drawSlumpVisualization(width, height, result.widthAfter, result.heightAfter, result.slumpFactor);
+            } catch (e) {
+                document.getElementById('slump-results').innerHTML = `<p style="color: red;">Error: ${e}</p>`;
+            }
+        }
+
+        function drawSlumpVisualization(origW, origH, newW, newH, factor) {
+            const canvas = document.getElementById('slump-canvas');
+            canvas.style.display = 'block';
+            const ctx = canvas.getContext('2d');
+            const cw = canvas.width;
+            const ch = canvas.height;
+
+            ctx.clearRect(0, 0, cw, ch);
+
+            // Scale: map bead dimensions to canvas pixels
+            const maxDim = Math.max(origW, origH, newW, newH);
+            const scale = (ch * 0.6) / maxDim;
+            const cx = cw / 2;
+            const baseY = ch * 0.8;
+
+            // Draw substrate
+            ctx.fillStyle = '#444';
+            ctx.fillRect(0, baseY, cw, 4);
+
+            // Draw original bead (outline)
+            const ow = origW * scale;
+            const oh = origH * scale;
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.rect(cx - ow / 2, baseY - oh, ow, oh);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw slumped bead (filled)
+            const sw = newW * scale;
+            const sh = newH * scale;
+            const r = Math.min(sw, sh) * 0.3; // corner radius
+
+            ctx.fillStyle = factor > 0.5 ? 'rgba(255, 100, 100, 0.5)' : 'rgba(0, 212, 255, 0.5)';
+            ctx.beginPath();
+            ctx.moveTo(cx - sw / 2 + r, baseY - sh);
+            ctx.lineTo(cx + sw / 2 - r, baseY - sh);
+            ctx.quadraticCurveTo(cx + sw / 2, baseY - sh, cx + sw / 2, baseY - sh + r);
+            ctx.lineTo(cx + sw / 2, baseY - r);
+            ctx.quadraticCurveTo(cx + sw / 2, baseY, cx + sw / 2 - r, baseY);
+            ctx.lineTo(cx - sw / 2 + r, baseY);
+            ctx.quadraticCurveTo(cx - sw / 2, baseY, cx - sw / 2, baseY - r);
+            ctx.lineTo(cx - sw / 2, baseY - sh + r);
+            ctx.quadraticCurveTo(cx - sw / 2, baseY - sh, cx - sw / 2 + r, baseY - sh);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Legend
+            ctx.fillStyle = '#eee';
+            ctx.font = '12px monospace';
+            ctx.fillText('--- original', 10, 20);
+            ctx.fillText('■ after slump', 10, 36);
+            ctx.fillStyle = factor > 0.5 ? '#ff6464' : '#00d4ff';
+            ctx.fillText(`${(factor * 100).toFixed(0)}% slump`, 10, 52);
         }
     </script>
 </body>

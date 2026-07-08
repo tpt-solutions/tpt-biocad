@@ -1,21 +1,10 @@
-[package]
-name = "tpt-biocad"
-version = "0.1.0"
-edition = "2021"
-license = "Apache-2.0"
-description = "Open-source CAD and slicing software for bioprinting and food printing with integrated rheology solver"
-authors = ["TPT BioCAD Team"]
-repository = "https://github.com/tpt-biocad/tpt-biocad"
-keywords = ["bioprinting", "slicer", "rheology", "cad", "3d-printing"]
-categories = ["science", "visualization", "graphics"]
-
 [workspace]
 members = [
     "core",
     "geometry",
     "fluid",
     "slice",
+    "hal",
     "ui",
 ]
-
-[dependencies]
+resolver = "2"

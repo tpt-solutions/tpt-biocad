@@ -28,20 +28,20 @@ Tracks work derived from `spec.txt` (Section 8 Roadmap, plus items added during 
 - [ ] Validation: regression-fit models against published literature rheometer curves (alginate, GelMA, chocolate, dough) with R² acceptance thresholds
 
 ## Phase 3: Bioprinting Specifics (Months 8-10)
-- [ ] Implement parametric lattice/scaffold generator (gyroid, honeycomb, Voronoi)
-- [ ] Add UV curing toolpath support
-- [ ] Add coaxial needle toolpath support
-- [ ] Implement safety interlocks (shear stress / thermal exposure thresholds, abort/flag logic)
-- [ ] Develop "slumping" visualization overlay in the UI
+- [x] Implement parametric lattice/scaffold generator (gyroid, honeycomb, Voronoi)
+- [x] Add UV curing toolpath support
+- [x] Add coaxial needle toolpath support
+- [x] Implement safety interlocks (shear stress / thermal exposure thresholds, abort/flag logic)
+- [x] Develop "slumping" visualization overlay in the UI
 
 ## Phase 4: Food Printing & Hardware (Months 11-12)
-- [ ] Implement thermal profiling algorithms (chocolate tempering curves)
-- [ ] Finalize HAL for pneumatic extruders
-- [ ] Finalize HAL for screw-based extruders
-- [ ] Build Klipper plugin implementing M300 (pneumatic pressure)
-- [ ] Build Klipper plugin implementing M301 (thermal profiling)
-- [ ] Build Klipper plugin implementing M302 (UV curing)
-- [ ] Build Klipper plugin implementing M303 (coaxial cross-linker)
+- [x] Implement thermal profiling algorithms (chocolate tempering curves)
+- [x] Finalize HAL for pneumatic extruders
+- [x] Finalize HAL for screw-based extruders
+- [x] Build Klipper plugin implementing M300 (pneumatic pressure)
+- [x] Build Klipper plugin implementing M301 (thermal profiling)
+- [x] Build Klipper plugin implementing M302 (UV curing)
+- [x] Build Klipper plugin implementing M303 (coaxial cross-linker)
 - [ ] Beta release
 - [ ] Community testing
 

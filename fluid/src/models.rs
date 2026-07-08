@@ -7,7 +7,7 @@ use tpt_core::RheologyModel;
 pub fn viscosity(model: &RheologyModel, shear_rate: f64) -> f64 {
     match model {
         RheologyModel::Newtonian { viscosity } => *viscosity,
-        
+
         RheologyModel::CarreauYasuda {
             eta_zero,
             eta_inf,
@@ -20,19 +20,16 @@ pub fn viscosity(model: &RheologyModel, shear_rate: f64) -> f64 {
             let term = (1.0 + lambda_gamma.powf(*a)).powf((*n - 1.0) / a);
             eta_inf + (eta_zero - eta_inf) * term
         }
-        
+
         RheologyModel::HerschelBulkley { tau_yield, k, n } => {
             // Herschel-Bulkley: τ = τy + kγ̇^n, so η = τ/γ̇ = τy/γ̇ + kγ̇^(n-1)
             if shear_rate == 0.0 {
-                f64::INFINITY
-            } else if shear_rate * tau_yield / (shear_rate * k * shear_rate.powf(*n - 1.0) + tau_yield) > 1.0 {
-                // Below yield stress - no flow
                 f64::INFINITY
             } else {
                 tau_yield / shear_rate + k * shear_rate.powf(*n - 1.0)
             }
         }
-        
+
         RheologyModel::Bingham { tau_yield, mu_p } => {
             // Bingham plastic: τ = τy + μpγ̇, so η = τ/γ̇ = τy/γ̇ + μp
             if shear_rate == 0.0 {
@@ -48,18 +45,18 @@ pub fn viscosity(model: &RheologyModel, shear_rate: f64) -> f64 {
 pub fn shear_stress(model: &RheologyModel, shear_rate: f64) -> f64 {
     match model {
         RheologyModel::Newtonian { viscosity } => viscosity * shear_rate,
-        
+
         RheologyModel::CarreauYasuda {
-            eta_zero,
-            eta_inf,
-            lambda,
-            a,
-            n,
+            eta_zero: _,
+            eta_inf: _,
+            lambda: _,
+            a: _,
+            n: _,
         } => {
             // τ = η(γ̇) * γ̇
             viscosity(model, shear_rate) * shear_rate
         }
-        
+
         RheologyModel::HerschelBulkley { tau_yield, k, n } => {
             // τ = τy + kγ̇^n
             if shear_rate == 0.0 {
@@ -68,7 +65,7 @@ pub fn shear_stress(model: &RheologyModel, shear_rate: f64) -> f64 {
                 tau_yield + k * shear_rate.powf(*n)
             }
         }
-        
+
         RheologyModel::Bingham { tau_yield, mu_p } => {
             // τ = τy + μpγ̇
             tau_yield + mu_p * shear_rate
@@ -89,7 +86,10 @@ mod tests {
 
     #[test]
     fn test_bingham_viscosity() {
-        let model = RheologyModel::Bingham { tau_yield: 10.0, mu_p: 5.0 };
+        let model = RheologyModel::Bingham {
+            tau_yield: 10.0,
+            mu_p: 5.0,
+        };
         // At high shear rate, should approach mu_p
         let eta = viscosity(&model, 1000.0);
         assert!(eta > 5.0 && eta < 6.0);
@@ -97,8 +97,15 @@ mod tests {
 
     #[test]
     fn test_bingham_shear_stress() {
-        let model = RheologyModel::Bingham { tau_yield: 10.0, mu_p: 5.0 };
+        let model = RheologyModel::Bingham {
+            tau_yield: 10.0,
+            mu_p: 5.0,
+        };
         // τ = τy + μpγ̇
-        assert_relative_eq!(shear_stress(&model, 100.0), 10.0 + 5.0 * 100.0, epsilon = 1e-10);
+        assert_relative_eq!(
+            shear_stress(&model, 100.0),
+            10.0 + 5.0 * 100.0,
+            epsilon = 1e-10
+        );
     }
 }

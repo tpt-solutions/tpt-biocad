@@ -1,0 +1,12 @@
+[package]
+name = "tpt-hal"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Hardware Abstraction Layer for TPT BioCAD printer communication"
+
+[dependencies]
+tpt-core = { path = "../core" }
+tokio = { version = "1", features = ["io-util", "time", "rt"] }
+tokio-serial = "5.4"
+thiserror = "2.0"
