@@ -14,6 +14,8 @@ pub struct TptProject {
     pub material: Option<Material>,
     pub machine: Option<Machine>,
     pub profile: Option<Profile>,
+    #[serde(default)]
+    pub thermal_profile: Option<ThermalProfileData>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,12 +24,26 @@ pub struct GeometryData {
     pub data: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum GeometryFormat {
     Stl,
     Obj,
     ThreeMf,
     BRep,
+}
+
+/// Serializable thermal profile for .tpt persistence.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThermalProfileData {
+    pub name: String,
+    pub segments: Vec<ThermalSegmentData>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThermalSegmentData {
+    pub temperature: f64,
+    pub hold_time: f64,
+    pub ramp_rate: f64,
 }
 
 impl TptProject {
@@ -37,6 +53,7 @@ impl TptProject {
             material: None,
             machine: None,
             profile: None,
+            thermal_profile: None,
         }
     }
 
@@ -44,7 +61,15 @@ impl TptProject {
     pub fn save<W: Write + Seek>(&self, writer: W) -> Result<(), ZipError> {
         let mut zip = ZipWriter::new(writer);
 
-        // Write JSON files
+        // Write geometry.json (binary data as base64 or raw)
+        if let Some(ref geometry) = self.geometry {
+            let json =
+                serde_json::to_vec(geometry).map_err(|e| ZipError::Io(std::io::Error::other(e)))?;
+            zip.start_file("geometry.json", zip::write::FileOptions::default())?;
+            zip.write_all(&json)?;
+        }
+
+        // Write material.json
         if let Some(ref material) = self.material {
             let json =
                 serde_json::to_vec(material).map_err(|e| ZipError::Io(std::io::Error::other(e)))?;
@@ -52,6 +77,7 @@ impl TptProject {
             zip.write_all(&json)?;
         }
 
+        // Write machine.json
         if let Some(ref machine) = self.machine {
             let json =
                 serde_json::to_vec(machine).map_err(|e| ZipError::Io(std::io::Error::other(e)))?;
@@ -59,10 +85,19 @@ impl TptProject {
             zip.write_all(&json)?;
         }
 
+        // Write profile.json
         if let Some(ref profile) = self.profile {
             let json =
                 serde_json::to_vec(profile).map_err(|e| ZipError::Io(std::io::Error::other(e)))?;
             zip.start_file("profile.json", zip::write::FileOptions::default())?;
+            zip.write_all(&json)?;
+        }
+
+        // Write thermal_profile.json
+        if let Some(ref tp) = self.thermal_profile {
+            let json =
+                serde_json::to_vec(tp).map_err(|e| ZipError::Io(std::io::Error::other(e)))?;
+            zip.start_file("thermal_profile.json", zip::write::FileOptions::default())?;
             zip.write_all(&json)?;
         }
 
@@ -75,6 +110,14 @@ impl TptProject {
         let mut archive = zip::ZipArchive::new(reader).map_err(|e| e.to_string())?;
 
         let mut project = Self::new();
+
+        if let Ok(mut json_file) = archive.by_name("geometry.json") {
+            let mut contents = String::new();
+            json_file
+                .read_to_string(&mut contents)
+                .map_err(|e| e.to_string())?;
+            project.geometry = Some(serde_json::from_str(&contents).map_err(|e| e.to_string())?);
+        }
 
         if let Ok(mut json_file) = archive.by_name("material.json") {
             let mut contents = String::new();
@@ -98,6 +141,15 @@ impl TptProject {
                 .read_to_string(&mut contents)
                 .map_err(|e| e.to_string())?;
             project.profile = Some(serde_json::from_str(&contents).map_err(|e| e.to_string())?);
+        }
+
+        if let Ok(mut json_file) = archive.by_name("thermal_profile.json") {
+            let mut contents = String::new();
+            json_file
+                .read_to_string(&mut contents)
+                .map_err(|e| e.to_string())?;
+            project.thermal_profile =
+                Some(serde_json::from_str(&contents).map_err(|e| e.to_string())?);
         }
 
         Ok(project)

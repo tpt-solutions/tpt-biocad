@@ -10,7 +10,14 @@ tpt-core = { path = "../core" }
 nalgebra = "0.33"
 thiserror = "2.0"
 byteorder = "1.5"
+zip = { version = "0.6", default-features = false }
 
 # For STL import/export
-# Note: opencascade-rs will be added later for B-Rep support
-# stl_io = "0.7"
+# opencascade-rs is gated behind the "brep" feature flag to keep the default
+# build lightweight. Enable with: cargo build --features brep
+opencascade-sys = { version = "0.1", optional = true }
+opencascade = { version = "0.1", optional = true }
+
+[features]
+default = []
+brep = ["opencascade-sys", "opencascade"]

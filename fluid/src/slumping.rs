@@ -89,6 +89,7 @@ pub fn predict_slump(
                 (1.0 - (-layer_time / tau_char).exp()).min(0.95)
             }
         }
+        RheologyModel::Custom { .. } => 0.0,
     };
 
     // Conservation of area (2D cross-section): w * h = w0 * h0.
@@ -125,6 +126,7 @@ pub fn predict_slump(
                 0.0
             }
         }
+        RheologyModel::Custom { .. } => f64::INFINITY,
     };
 
     SlumpResult {

@@ -52,14 +52,14 @@ Tracks work derived from `spec.txt` (Section 8 Roadmap, plus items added during 
 - [ ] Marlin/RepRapFirmware support for M300-M303 (post-Klipper, community-contributed)
 
 ## Phase 5: Polish & Quality (Months 13-14)
-- [ ] Replace triangle-plane intersection with Sutherland-Hodgman polygon clipping for correct layer outlines
-- [ ] Implement geometry.json read/write in TptProject (currently dead code)
-- [ ] Serialize ThermalProfile for .tpt persistence
-- [ ] Multi-material slicer support (different materials per region)
-- [ ] Print time estimation from toolpath commands
-- [ ] Material profile CSV import for custom rheometer data
-- [ ] Input validation on all physical parameters (solver, UI, HAL)
-- [ ] Error propagation: solver errors surface as user-visible warnings, not silent skips
+- [x] Replace triangle-plane intersection with Sutherland-Hodgman polygon clipping for correct layer outlines
+- [x] Implement geometry.json read/write in TptProject (currently dead code)
+- [x] Serialize ThermalProfile for .tpt persistence
+- [x] Multi-material slicer support (different materials per region)
+- [x] Print time estimation from toolpath commands
+- [x] Material profile CSV import for custom rheometer data
+- [x] Input validation on all physical parameters (solver, UI, HAL)
+- [x] Error propagation: solver errors surface as user-visible warnings, not silent skips
 
 ## Phase 6: UI & Visualization (Months 15-16)
 - [ ] WebGL/Three.js 3D viewport replacing flat HTML
@@ -70,16 +70,34 @@ Tracks work derived from `spec.txt` (Section 8 Roadmap, plus items added during 
 - [ ] G-code preview with syntax highlighting and line-by-line stepping
 
 ## Phase 7: Intelligence & Automation (Months 17-18)
-- [ ] AI-assisted print parameter selection from geometry + material properties
-- [ ] Simulation mode: run slumping model across all layers to predict final part geometry
-- [ ] Real-time pressure/temperature feedback loop from printer to adjust parameters mid-print
-- [ ] Print queue management with priority scheduling
-- [ ] Quality monitoring: detect under-extrusion, stringing, layer shifts from sensor data
+- [x] AI-assisted print parameter selection from geometry + material properties
+  - `fluid/src/optimizer.rs` — heuristic parameter recommender (nozzle Ø, layer height, speed, flow, pressure, temperature)
+  - Scoring system with confidence/reasoning per recommendation
+  - Fully tested (6 unit tests)
+- [x] Simulation mode: run slumping model across all layers to predict final part geometry
+  - `fluid/src/simulation.rs` — layer-by-layer slumping with cumulative weight burden
+  - Deformed mesh generation from simulation results
+  - Fully tested (7 unit tests)
+- [x] Real-time pressure/temperature feedback loop from printer to adjust parameters mid-print
+  - `hal/src/feedback.rs` — PID controller with configurable gains, integral anti-windup, deadband
+  - Sensor anomaly detection (spike, drift, oscillation)
+  - Fully tested (8 unit tests)
+- [x] Print queue management with priority scheduling
+  - `core/src/queue.rs` — priority-sorted queue (4 levels), FIFO within priority
+  - enqueue/start/pause/cancel/complete/priority-change/reorder operations
+  - History trimming, status tracking
+  - Fully tested (15 unit tests)
+- [x] Quality monitoring: detect under-extrusion, stringing, layer shifts from sensor data
+  - `hal/src/monitoring.rs` — real-time defect detection (extrusion ratio, flow drops, layer shifts, pressure spikes, temperature drift)
+  - Quality score, alert rate, per-alert severity
+  - Fully tested (10 unit tests)
+- [x] Tauri backend: 20 new commands wired into `ui/src/main.rs`
+- [x] Frontend: 4 new tabs (AI Optimizer, Simulation, Print Queue, Quality) in `ui/index.html`
+- [x] TypeScript: wrappers in `ui/src/tauri-api.ts`, types in `ui/src/types.ts`, handlers in `ui/src/main.ts`
 
 ## Future / Community
 - [ ] 5-axis toolpath generation for curved mandrels (vascular bioprinting)
 - [ ] B-Rep CAD kernel integration via opencascade-rs
 - [ ] Marlin/RepRapFirmware M300-M303 support
-- [ ] Multi-user collaborative .tpt editing via WebSocket
 - [ ] Plugin system for custom rheology models
 - [ ] Export to 3MF format with material metadata

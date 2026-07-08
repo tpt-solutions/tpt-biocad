@@ -66,6 +66,10 @@ pub enum RheologyModel {
         tau_yield: f64, // Yield stress (Pa)
         mu_p: f64,      // Plastic viscosity (Pa·s)
     },
+
+    /// Custom rheology model registered via the plugin system.
+    /// The string key identifies the registered plugin.
+    Custom { plugin_key: String },
 }
 
 /// Printer configuration

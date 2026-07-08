@@ -5,266 +5,525 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TPT BioCAD</title>
     <style>
+        * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            padding: 20px;
+            margin: 0; padding: 0;
             background: #1a1a2e;
             color: #eee;
+            overflow: hidden;
+            height: 100vh;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        h1 {
-            color: #00d4ff;
-        }
-        .panel {
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
             background: #16213e;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
+            border-bottom: 1px solid #0f3460;
+            height: 48px;
         }
-        button {
+        .app-header h1 {
+            margin: 0; font-size: 18px; color: #00d4ff;
+        }
+        .app-header .actions {
+            display: flex; gap: 6px;
+        }
+        .app-header button {
+            background: #0f3460;
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .app-header button:hover { background: #00d4ff; color: #1a1a2e; }
+        .app-header button.disabled { opacity: 0.4; cursor: default; }
+        .app-header button.disabled:hover { background: #0f3460; color: #00d4ff; }
+
+        .app-body {
+            display: flex;
+            height: calc(100vh - 48px);
+        }
+        .sidebar {
+            width: 260px;
+            background: #16213e;
+            border-right: 1px solid #0f3460;
+            padding: 8px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .sidebar h3 {
+            margin: 8px 0 6px; font-size: 13px; color: #8b949e;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .material-item {
+            background: #0f3460;
+            padding: 6px 10px;
+            margin: 2px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            border: 2px solid transparent;
+        }
+        .material-item:hover { background: #1a3a6a; }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .tab-bar {
+            display: flex;
+            background: #16213e;
+            border-bottom: 1px solid #0f3460;
+            flex-shrink: 0;
+        }
+        .tab-btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: #8b949e;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .tab-btn:hover { color: #eee; }
+        .tab-btn.active {
+            color: #00d4ff;
+            border-bottom-color: #00d4ff;
+        }
+
+        .tab-panel { display: none; flex: 1; overflow: auto; }
+        .tab-panel.active { display: flex; flex-direction: column; }
+
+        /* Viewport tab */
+        #panel-viewport { position: relative; }
+        #viewport-container { width: 100%; flex: 1; min-height: 400px; }
+        .viewport-overlay {
+            position: absolute;
+            top: 8px; left: 8px;
+            background: rgba(22,33,62,0.85);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 10;
+            display: flex; gap: 8px;
+            align-items: center;
+        }
+        .viewport-overlay button {
+            background: #0f3460;
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            padding: 3px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .viewport-overlay button:hover { background: #00d4ff; color: #1a1a2e; }
+
+        /* Toolpath tab */
+        .toolpath-controls {
+            display: flex; gap: 8px; padding: 8px;
+            background: #16213e;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .toolpath-controls button {
+            background: #0f3460;
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .toolpath-controls button:hover { background: #00d4ff; color: #1a1a2e; }
+        .toolpath-controls label { font-size: 12px; color: #8b949e; }
+
+        /* Slump tab */
+        .slump-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 16px;
+        }
+        .slump-controls label {
+            display: flex; flex-direction: column;
+            font-size: 12px; color: #8b949e;
+        }
+        .slump-controls input {
+            background: #0f3460;
+            border: 1px solid #00d4ff;
+            color: #fff;
+            padding: 6px;
+            border-radius: 4px;
+            margin-top: 2px;
+        }
+
+        /* Material editor tab */
+        .material-editor {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 12px;
+            padding: 12px;
+            flex: 1;
+        }
+        .mat-params { display: flex; flex-direction: column; gap: 6px; }
+        .mat-params select, .mat-params input {
+            background: #0f3460;
+            border: 1px solid #00d4ff;
+            color: #fff;
+            padding: 6px;
+            border-radius: 4px;
+        }
+        .mat-params label { font-size: 12px; color: #8b949e; }
+        .param-group { display: flex; flex-direction: column; gap: 4px; }
+        .chart-container { position: relative; height: 300px; }
+
+        /* G-code tab */
+        .gcode-toolbar {
+            display: flex; gap: 6px; padding: 6px 8px;
+            background: #16213e;
+            align-items: center;
+            border-bottom: 1px solid #0f3460;
+            flex-shrink: 0;
+        }
+        .gcode-toolbar button {
+            background: #0f3460;
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            padding: 3px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .gcode-toolbar button:hover { background: #00d4ff; color: #1a1a2e; }
+        .gcode-toolbar input {
+            background: #0f3460;
+            border: 1px solid #00d4ff;
+            color: #fff;
+            padding: 3px 6px;
+            border-radius: 3px;
+            width: 60px;
+            font-size: 11px;
+        }
+        .gcode-toolbar span {
+            font-size: 11px; color: #8b949e;
+        }
+        #gcode-container { flex: 1; overflow: auto; }
+
+        /* Generic */
+        .btn-primary {
             background: #00d4ff;
             border: none;
-            padding: 10px 20px;
+            padding: 6px 16px;
             border-radius: 4px;
             cursor: pointer;
             color: #1a1a2e;
             font-weight: bold;
+            font-size: 12px;
         }
-        button:hover {
-            background: #00a8cc;
-        }
-        input, select {
+        .btn-primary:hover { background: #00a8cc; }
+
+        .result-box {
             background: #0f3460;
-            border: 1px solid #00d4ff;
-            color: #fff;
+            border-radius: 4px;
             padding: 8px;
-            border-radius: 4px;
-            margin: 5px 0;
+            margin: 8px;
+            font-size: 12px;
         }
-        .material-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .material-item {
-            background: #0f3460;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .material-item:hover {
-            background: #00d4ff;
-            color: #1a1a2e;
-        }
+        .result-box p { margin: 2px 0; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>TPT BioCAD</h1>
-
-        <div class="panel">
-            <h2>Material Selection</h2>
-            <div id="materials" class="material-list">
-                Loading materials...
-            </div>
-        </div>
-
-        <div class="panel">
-            <h2>Rheology Calculator</h2>
-            <div>
-                <label>Shear Rate (1/s): <input type="number" id="shear-rate" value="100"></label>
-            </div>
-            <div>
-                <label>Flow Rate (mm³/s): <input type="number" id="flow-rate" value="100"></label>
-            </div>
-            <div>
-                <label>Nozzle Diameter (mm): <input type="number" id="nozzle-diameter" value="0.4" step="0.1"></label>
-            </div>
-            <button onclick="calculate()">Calculate</button>
-            <div id="results"></div>
-        </div>
-
-        <div class="panel">
-            <h2>Slumping Predictor</h2>
-            <div>
-                <label>Bead Width (mm): <input type="number" id="bead-width" value="0.4" step="0.1"></label>
-            </div>
-            <div>
-                <label>Bead Height (mm): <input type="number" id="bead-height" value="0.2" step="0.1"></label>
-            </div>
-            <div>
-                <label>Print Speed (mm/s): <input type="number" id="print-speed" value="10" step="1"></label>
-            </div>
-            <div>
-                <label>Layer Time (s): <input type="number" id="layer-time" value="1.0" step="0.5"></label>
-            </div>
-            <button onclick="calculateSlump()">Predict Slumping</button>
-            <div id="slump-results"></div>
-            <canvas id="slump-canvas" width="400" height="200" style="display:none; margin-top:10px; border:1px solid #333;"></canvas>
+    <div class="app-header">
+        <h1>TPT BioCAD v0.1</h1>
+        <div class="actions">
+            <button id="btn-undo" title="Undo (Ctrl+Z)">↩ Undo</button>
+            <button id="btn-redo" title="Redo (Ctrl+Shift+Z)">↪ Redo</button>
+            <span id="undo-info" style="font-size:11px;color:#8b949e;line-height:28px;"></span>
         </div>
     </div>
 
-    <script>
-        // Load materials on startup
-        window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const materials = await window.__TAURI__.invoke('get_materials');
-                const container = document.getElementById('materials');
-                container.innerHTML = '';
-                materials.forEach(m => {
-                    const div = document.createElement('div');
-                    div.className = 'material-item';
-                    div.textContent = m;
-                    div.dataset.material = m;
-                    div.addEventListener('click', () => selectMaterial(m));
-                    container.appendChild(div);
-                });
-            } catch (e) {
-                document.getElementById('materials').textContent = 'Error loading materials';
-            }
-        });
+    <div class="app-body">
+        <!-- Sidebar: material list -->
+        <div class="sidebar">
+            <h3>Materials</h3>
+            <div id="materials">Loading...</div>
+        </div>
 
-        let selectedMaterial = null;
+        <!-- Main content area -->
+        <div class="main-content">
+            <div class="tab-bar">
+                <button class="tab-btn active" data-tab="viewport">3D Viewport</button>
+                <button class="tab-btn" data-tab="toolpath">Toolpath</button>
+                <button class="tab-btn" data-tab="slump">Slumping</button>
+                <button class="tab-btn" data-tab="material">Material Editor</button>
+                <button class="tab-btn" data-tab="optimizer">AI Optimizer</button>
+                <button class="tab-btn" data-tab="simulation">Simulation</button>
+                <button class="tab-btn" data-tab="queue">Print Queue</button>
+                <button class="tab-btn" data-tab="quality">Quality</button>
+                <button class="tab-btn" data-tab="gcode">G-code</button>
+            </div>
 
-        function selectMaterial(material) {
-            selectedMaterial = material;
-            document.querySelectorAll('.material-item').forEach(el => {
-                el.style.border = el.textContent === material ? '2px solid #00d4ff' : 'none';
-            });
-        }
+            <!-- Viewport Panel -->
+            <div id="panel-viewport" class="tab-panel active">
+                <div id="viewport-container"></div>
+                <div class="viewport-overlay">
+                    <button onclick="loadDemoMesh()">Load Demo</button>
+                    <button onclick="demoToolpath()">Toolpath</button>
+                    <button onclick="resetViewport()">Reset View</button>
+                    <span id="layer-indicator" style="color:#8b949e;font-size:11px;">No toolpath</span>
+                </div>
+            </div>
 
-        async function calculate() {
-            if (!selectedMaterial) {
-                alert('Please select a material first');
-                return;
-            }
+            <!-- Toolpath Panel -->
+            <div id="panel-toolpath" class="tab-panel">
+                <div class="toolpath-controls">
+                    <button onclick="demoToolpath()">Generate Toolpath</button>
+                    <button onclick="playToolpath()">▶ Play/Pause</button>
+                    <label>
+                        Speed:
+                        <input type="range" min="0.5" max="5" step="0.5" value="1"
+                               oninput="if(toolpathAnimator)toolpathAnimator.setSpeed(parseFloat(this.value))">
+                    </label>
+                    <span id="layer-indicator-2" style="color:#8b949e;font-size:11px;">No layers</span>
+                </div>
+                <div style="padding:12px;flex:1;display:flex;flex-direction:column;gap:8px;overflow:auto;">
+                    <div class="result-box" id="toolpath-info">
+                        <p>Click "Generate Toolpath" to create a demo toolpath</p>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                        <label style="font-size:12px;color:#8b949e;">
+                            Layer Height (mm)
+                            <input type="number" id="slice-layer-height" value="0.2" step="0.05"
+                                   style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                        <label style="font-size:12px;color:#8b949e;">
+                            Infill Density
+                            <input type="number" id="slice-infill" value="0.2" min="0" max="1" step="0.05"
+                                   style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                        <label style="font-size:12px;color:#8b949e;">
+                            Perimeters
+                            <input type="number" id="slice-perimeters" value="3" min="1"
+                                   style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                        <label style="font-size:12px;color:#8b949e;">
+                            Infill Pattern
+                            <select id="slice-pattern"
+                                    style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                                <option>grid</option>
+                                <option>gyroid</option>
+                                <option>honeycomb</option>
+                                <option>voronoi</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+            </div>
 
-            const shearRate = parseFloat(document.getElementById('shear-rate').value);
-            const flowRate = parseFloat(document.getElementById('flow-rate').value);
-            const nozzleDiameter = parseFloat(document.getElementById('nozzle-diameter').value);
+            <!-- Slumping Panel (3D overlay) -->
+            <div id="panel-slump" class="tab-panel">
+                <div style="padding:8px;font-size:12px;color:#8b949e;">
+                    3D slumping overlay — visualizes bead deformation per layer
+                </div>
+                <div class="slump-controls">
+                    <label>Bead Width (mm):
+                        <input type="number" id="slump-width" value="0.4" step="0.05">
+                    </label>
+                    <label>Bead Height (mm):
+                        <input type="number" id="slump-height" value="0.2" step="0.05">
+                    </label>
+                    <label>Print Speed (mm/s):
+                        <input type="number" id="slump-speed" value="10" step="1">
+                    </label>
+                    <label>Layer Time (s):
+                        <input type="number" id="slump-time" value="1.0" step="0.5">
+                    </label>
+                </div>
+                <div style="padding:0 16px 8px">
+                    <button class="btn-primary" onclick="calculateSlump3D()">Predict & Show in 3D</button>
+                </div>
+                <div class="result-box" id="slump-3d-results">
+                    <p>Select a material and click "Predict & Show in 3D"</p>
+                </div>
+            </div>
 
-            try {
-                const viscosity = await window.__TAURI__.invoke('calculate_viscosity', {
-                    materialName: selectedMaterial,
-                    shearRate: shearRate
-                });
+            <!-- Material Editor Panel -->
+            <div id="panel-material" class="tab-panel">
+                <div class="material-editor">
+                    <div class="mat-params">
+                        <h3 style="margin:0 0 8px;font-size:14px;color:#00d4ff;">Rheological Model</h3>
+                        <label>Model Type:
+                            <select id="model-type">
+                                <option value="CarreauYasuda">Carreau-Yasuda</option>
+                                <option value="HerschelBulkley">Herschel-Bulkley</option>
+                                <option value="Bingham">Bingham</option>
+                                <option value="Newtonian">Newtonian</option>
+                            </select>
+                        </label>
+                        <label>Density (kg/m³):
+                            <input type="number" id="mat-density" value="1000" step="10">
+                        </label>
 
-                const pressure = await window.__TAURI__.invoke('calculate_pressure', {
-                    materialName: selectedMaterial,
-                    flowRate: flowRate,
-                    nozzleDiameter: nozzleDiameter
-                });
+                        <div id="params-CarreauYasuda" class="param-group">
+                            <h4 style="margin:4px 0;font-size:12px;color:#8b949e;">Carreau-Yasuda</h4>
+                            <label>η₀ (Pa·s): <input class="mat-param-input" data-param="etaZero" type="number" value="50" step="1"></label>
+                            <label>η∞ (Pa·s): <input class="mat-param-input" data-param="etaInf" type="number" value="0.05" step="0.01"></label>
+                            <label>λ (s): <input class="mat-param-input" data-param="lambda" type="number" value="0.3" step="0.1"></label>
+                            <label>a: <input class="mat-param-input" data-param="a" type="number" value="0.4" step="0.05"></label>
+                            <label>n: <input class="mat-param-input" data-param="n" type="number" value="0.4" step="0.05"></label>
+                        </div>
+                        <div id="params-HerschelBulkley" class="param-group" style="display:none">
+                            <h4 style="margin:4px 0;font-size:12px;color:#8b949e;">Herschel-Bulkley</h4>
+                            <label>τ_yield (Pa): <input class="mat-param-input" data-param="tauYield" type="number" value="50" step="1"></label>
+                            <label>k (Pa·sⁿ): <input class="mat-param-input" data-param="k" type="number" value="5" step="0.5"></label>
+                            <label>n: <input class="mat-param-input" data-param="n" type="number" value="0.5" step="0.05"></label>
+                        </div>
+                        <div id="params-Bingham" class="param-group" style="display:none">
+                            <h4 style="margin:4px 0;font-size:12px;color:#8b949e;">Bingham</h4>
+                            <label>τ_yield (Pa): <input class="mat-param-input" data-param="tauYield" type="number" value="30" step="1"></label>
+                            <label>μ_p (Pa·s): <input class="mat-param-input" data-param="muP" type="number" value="3" step="0.5"></label>
+                        </div>
+                        <div id="params-Newtonian" class="param-group" style="display:none">
+                            <h4 style="margin:4px 0;font-size:12px;color:#8b949e;">Newtonian</h4>
+                            <label>η (Pa·s): <input class="mat-param-input" data-param="viscosity" type="number" value="1" step="0.1"></label>
+                        </div>
 
-                document.getElementById('results').innerHTML = `
-                    <h3>Results for ${selectedMaterial}</h3>
-                    <p>Viscosity at γ̇=${shearRate}: ${viscosity.toFixed(4)} Pa·s</p>
-                    <p>Pressure drop: ${pressure.pressureDrop.toFixed(2)} Pa</p>
-                    <p>Wall shear stress: ${pressure.wallShearStress.toFixed(2)} Pa</p>
-                `;
-            } catch (e) {
-                document.getElementById('results').innerHTML = `<p style="color: red;">Error: ${e}</p>`;
-            }
-        }
+                        <div style="margin-top:8px">
+                            <span id="viscosity-at-shear" style="font-size:11px;color:#00d4ff;"></span>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="margin:0 0 8px;font-size:14px;color:#00d4ff;">Viscosity Curve</h3>
+                        <div class="chart-container">
+                            <canvas id="viscosity-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        async function calculateSlump() {
-            if (!selectedMaterial) {
-                alert('Please select a material first');
-                return;
-            }
+            <!-- AI Optimizer Panel -->
+            <div id="panel-optimizer" class="tab-panel">
+                <div style="padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;overflow:auto;">
+                    <h3 style="margin:0 0 8px;font-size:14px;color:#00d4ff;">AI-Assisted Parameter Selection</h3>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                        <label style="font-size:12px;color:#8b949e;">Volume (mm³)
+                            <input type="number" id="opt-volume" value="1000" style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                        <label style="font-size:12px;color:#8b949e;">Surface Area (mm²)
+                            <input type="number" id="opt-surface" value="600" style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                        <label style="font-size:12px;color:#8b949e;">Height (mm)
+                            <input type="number" id="opt-height" value="20" style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                        <label style="font-size:12px;color:#8b949e;">Min Feature Size (mm)
+                            <input type="number" id="opt-feature" value="1.0" step="0.1" style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                        <label style="font-size:12px;color:#8b949e;">Max Overhang (°)
+                            <input type="number" id="opt-overhang" value="45" style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                    </div>
+                    <button class="btn-primary" onclick="runOptimizer()">Recommend Parameters</button>
+                    <div class="result-box" id="opt-results">
+                        <p>Select a material, enter geometry, and click "Recommend Parameters"</p>
+                    </div>
+                </div>
+            </div>
 
-            const width = parseFloat(document.getElementById('bead-width').value);
-            const height = parseFloat(document.getElementById('bead-height').value);
-            const speed = parseFloat(document.getElementById('print-speed').value);
-            const layerTime = parseFloat(document.getElementById('layer-time').value);
+            <!-- Simulation Panel -->
+            <div id="panel-simulation" class="tab-panel">
+                <div style="padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;overflow:auto;">
+                    <h3 style="margin:0 0 8px;font-size:14px;color:#00d4ff;">Layer-by-Layer Slumping Simulation</h3>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                        <label style="font-size:12px;color:#8b949e;">Bead Width (mm)
+                            <input type="number" id="sim-width" value="0.4" step="0.05" style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                        <label style="font-size:12px;color:#8b949e;">Bead Height (mm)
+                            <input type="number" id="sim-height" value="0.2" step="0.05" style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                        <label style="font-size:12px;color:#8b949e;">Inter-layer Time (s)
+                            <input type="number" id="sim-time" value="2.0" step="0.5" style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                        <label style="font-size:12px;color:#8b949e;">Print Speed (mm/s)
+                            <input type="number" id="sim-speed" value="10" style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                        <label style="font-size:12px;color:#8b949e;">Layer Count
+                            <input type="number" id="sim-layers" value="10" min="1" style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;width:100%">
+                        </label>
+                    </div>
+                    <button class="btn-primary" onclick="runSimulation()">Run Simulation</button>
+                    <div class="result-box" id="sim-results">
+                        <p>Configure parameters and click "Run Simulation"</p>
+                    </div>
+                </div>
+            </div>
 
-            try {
-                const result = await window.__TAURI__.invoke('calculate_slump', {
-                    materialName: selectedMaterial,
-                    initialWidth: width,
-                    initialHeight: height,
-                    printSpeed: speed,
-                    layerTime: layerTime,
-                });
+            <!-- Print Queue Panel -->
+            <div id="panel-queue" class="tab-panel">
+                <div style="padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;overflow:auto;">
+                    <h3 style="margin:0 0 8px;font-size:14px;color:#00d4ff;">Print Queue</h3>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <input type="text" id="queue-job-name" placeholder="Job name" style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px;flex:1">
+                        <select id="queue-priority" style="background:#0f3460;border:1px solid #00d4ff;color:#fff;padding:4px;border-radius:3px">
+                            <option>normal</option>
+                            <option>low</option>
+                            <option>high</option>
+                            <option>critical</option>
+                        </select>
+                        <button onclick="enqueueDemoJob()" style="background:#0f3460;border:1px solid #00d4ff;color:#00d4ff;padding:4px 12px;border-radius:4px;cursor:pointer">Add Demo Job</button>
+                        <button onclick="startNextJob()" style="background:#0f3460;border:1px solid #00d4ff;color:#00d4ff;padding:4px 12px;border-radius:4px;cursor:pointer">▶ Start Next</button>
+                        <button onclick="completeJob()" style="background:#0f3460;border:1px solid #00d4ff;color:#00d4ff;padding:4px 12px;border-radius:4px;cursor:pointer">✓ Complete</button>
+                        <button onclick="refreshQueue()" style="background:#0f3460;border:1px solid #00d4ff;color:#00d4ff;padding:4px 12px;border-radius:4px;cursor:pointer">↻ Refresh</button>
+                    </div>
+                    <div class="result-box" id="queue-results">
+                        <p>Queue is empty. Add jobs to get started.</p>
+                    </div>
+                </div>
+            </div>
 
-                const pct = (result.slumpFactor * 100).toFixed(1);
-                document.getElementById('slump-results').innerHTML = `
-                    <h3>Slump Prediction for ${selectedMaterial}</h3>
-                    <p>Slump factor: ${pct}%</p>
-                    <p>Width: ${width.toFixed(2)} mm → ${result.widthAfter.toFixed(2)} mm</p>
-                    <p>Height: ${height.toFixed(2)} mm → ${result.heightAfter.toFixed(2)} mm</p>
-                    <p>Settling time: ${result.settlingTime === Infinity ? '∞ (no slump)' : result.settlingTime.toFixed(2) + ' s'}</p>
-                `;
+            <!-- Quality Monitor Panel -->
+            <div id="panel-quality" class="tab-panel">
+                <div style="padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;overflow:auto;">
+                    <h3 style="margin:0 0 8px;font-size:14px;color:#00d4ff;">Quality Monitoring</h3>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <button onclick="feedNormalSample()" style="background:#0f3460;border:1px solid #00d4ff;color:#00d4ff;padding:4px 12px;border-radius:4px;cursor:pointer">Feed Normal</button>
+                        <button onclick="feedUnderExtrusion()" style="background:#0f3460;border:1px solid #00d4ff;color:#00d4ff;padding:4px 12px;border-radius:4px;cursor:pointer">Feed Under-Extrusion</button>
+                        <button onclick="feedPressureSpike()" style="background:#0f3460;border:1px solid #00d4ff;color:#00d4ff;padding:4px 12px;border-radius:4px;cursor:pointer">Feed Pressure Spike</button>
+                        <button onclick="resetQuality()" style="background:#0f3460;border:1px solid #00d4ff;color:#00d4ff;padding:4px 12px;border-radius:4px;cursor:pointer">Reset</button>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <span style="font-size:12px;color:#8b949e;">Quality Score:</span>
+                        <span id="quality-score-display" style="font-size:18px;font-weight:bold;color:#00d4ff;">1.00</span>
+                    </div>
+                    <div class="result-box" id="quality-results">
+                        <p>No alerts yet. Feed sensor data to monitor.</p>
+                    </div>
+                </div>
+            </div>
 
-                drawSlumpVisualization(width, height, result.widthAfter, result.heightAfter, result.slumpFactor);
-            } catch (e) {
-                document.getElementById('slump-results').innerHTML = `<p style="color: red;">Error: ${e}</p>`;
-            }
-        }
+            <!-- G-code Panel -->
+            <div id="panel-gcode" class="tab-panel">
+                <div class="gcode-toolbar">
+                    <button onclick="gcodeStepBackward()">⏮ Prev</button>
+                    <button onclick="gcodeStepForward()">Next ⏭</button>
+                    <span>|</span>
+                    <span>Go to line:</span>
+                    <input type="number" id="gcode-goto" value="1" min="1">
+                    <button onclick="gcodeGoToLine()">Go</button>
+                    <span id="gcode-line-info" style="flex:1;text-align:right;"></span>
+                </div>
+                <div id="gcode-container"></div>
+            </div>
+        </div>
+    </div>
 
-        function drawSlumpVisualization(origW, origH, newW, newH, factor) {
-            const canvas = document.getElementById('slump-canvas');
-            canvas.style.display = 'block';
-            const ctx = canvas.getContext('2d');
-            const cw = canvas.width;
-            const ch = canvas.height;
-
-            ctx.clearRect(0, 0, cw, ch);
-
-            // Scale: map bead dimensions to canvas pixels
-            const maxDim = Math.max(origW, origH, newW, newH);
-            const scale = (ch * 0.6) / maxDim;
-            const cx = cw / 2;
-            const baseY = ch * 0.8;
-
-            // Draw substrate
-            ctx.fillStyle = '#444';
-            ctx.fillRect(0, baseY, cw, 4);
-
-            // Draw original bead (outline)
-            const ow = origW * scale;
-            const oh = origH * scale;
-            ctx.strokeStyle = '#00d4ff';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]);
-            ctx.beginPath();
-            ctx.rect(cx - ow / 2, baseY - oh, ow, oh);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            // Draw slumped bead (filled)
-            const sw = newW * scale;
-            const sh = newH * scale;
-            const r = Math.min(sw, sh) * 0.3; // corner radius
-
-            ctx.fillStyle = factor > 0.5 ? 'rgba(255, 100, 100, 0.5)' : 'rgba(0, 212, 255, 0.5)';
-            ctx.beginPath();
-            ctx.moveTo(cx - sw / 2 + r, baseY - sh);
-            ctx.lineTo(cx + sw / 2 - r, baseY - sh);
-            ctx.quadraticCurveTo(cx + sw / 2, baseY - sh, cx + sw / 2, baseY - sh + r);
-            ctx.lineTo(cx + sw / 2, baseY - r);
-            ctx.quadraticCurveTo(cx + sw / 2, baseY, cx + sw / 2 - r, baseY);
-            ctx.lineTo(cx - sw / 2 + r, baseY);
-            ctx.quadraticCurveTo(cx - sw / 2, baseY, cx - sw / 2, baseY - r);
-            ctx.lineTo(cx - sw / 2, baseY - sh + r);
-            ctx.quadraticCurveTo(cx - sw / 2, baseY - sh, cx - sw / 2 + r, baseY - sh);
-            ctx.closePath();
-            ctx.fill();
-            ctx.strokeStyle = '#00d4ff';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-
-            // Legend
-            ctx.fillStyle = '#eee';
-            ctx.font = '12px monospace';
-            ctx.fillText('--- original', 10, 20);
-            ctx.fillText('■ after slump', 10, 36);
-            ctx.fillStyle = factor > 0.5 ? '#ff6464' : '#00d4ff';
-            ctx.fillText(`${(factor * 100).toFixed(0)}% slump`, 10, 52);
-        }
-    </script>
+    <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

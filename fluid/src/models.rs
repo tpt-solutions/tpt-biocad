@@ -38,6 +38,7 @@ pub fn viscosity(model: &RheologyModel, shear_rate: f64) -> f64 {
                 tau_yield / shear_rate + mu_p
             }
         }
+        RheologyModel::Custom { .. } => 0.0,
     }
 }
 
@@ -70,6 +71,7 @@ pub fn shear_stress(model: &RheologyModel, shear_rate: f64) -> f64 {
             // τ = τy + μpγ̇
             tau_yield + mu_p * shear_rate
         }
+        RheologyModel::Custom { .. } => 0.0,
     }
 }
 

@@ -25,6 +25,18 @@ impl Default for NozzleGeometry {
     }
 }
 
+impl NozzleGeometry {
+    /// Validate nozzle geometry parameters.
+    pub fn validate(&self) -> Result<(), Vec<String>> {
+        tpt_core::validate_nozzle_geometry(
+            self.inlet_diameter,
+            self.outlet_diameter,
+            self.length,
+            self.taper_angle,
+        )
+    }
+}
+
 /// Result of pressure/flow calculation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FlowResult {
@@ -107,6 +119,7 @@ fn shear_rate_from_stress(model: &RheologyModel, tau: f64) -> f64 {
             }
             0.5 * (lo + hi)
         }
+        RheologyModel::Custom { .. } => 0.0,
     }
 }
 

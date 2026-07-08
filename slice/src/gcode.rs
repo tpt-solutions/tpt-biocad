@@ -41,6 +41,9 @@ pub enum GCodeCommand {
     M303 {
         s: Option<i32>,
     }, // Coaxial cross-linker (S0=off, S1=on, None=toggle)
+    T {
+        n: usize,
+    }, // Tool change (Tn)
 }
 
 /// G-code generator
@@ -105,6 +108,7 @@ impl GCodeGenerator {
                 Some(val) => format!("M303 S{}", val),
                 None => "M303".to_string(),
             },
+            GCodeCommand::T { n } => format!("T{}", n),
         };
         self.commands.push(line);
     }
@@ -175,6 +179,9 @@ impl GCodeGenerator {
                 }
                 ToolpathCommand::CoaxialFlow => {
                     self.add(GCodeCommand::M303 { s: None });
+                }
+                ToolpathCommand::ToolChange { tool } => {
+                    self.add(GCodeCommand::T { n: *tool });
                 }
             }
         }

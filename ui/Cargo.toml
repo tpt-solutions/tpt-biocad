@@ -12,7 +12,9 @@ tauri-build = "2.0"
 tauri = { version = "2.0" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+nalgebra = "0.33"
 tpt-core = { path = "../core" }
 tpt-geometry = { path = "../geometry" }
 tpt-fluid = { path = "../fluid" }
 tpt-slice = { path = "../slice" }
+tpt-hal = { path = "../hal" }

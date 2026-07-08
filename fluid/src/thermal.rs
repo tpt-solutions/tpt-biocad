@@ -6,10 +6,12 @@
 // (temperature, hold_time) segments that the printer's heater should follow to
 // achieve a stable crystal form.
 
+use serde::{Deserialize, Serialize};
+
 /// A single segment of a thermal profile: hold at `temperature` (°C) for
 /// `hold_time` (s), optionally ramping from the previous segment at
 /// `ramp_rate` (°C/s).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThermalSegment {
     pub temperature: f64, // °C
     pub hold_time: f64,   // s
@@ -17,7 +19,7 @@ pub struct ThermalSegment {
 }
 
 /// A named thermal profile (e.g. a dark-chocolate tempering curve).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThermalProfile {
     pub name: String,
     pub segments: Vec<ThermalSegment>,
@@ -130,6 +132,38 @@ pub fn milk_chocolate_tempering() -> ThermalProfile {
     }
 }
 
+/// Convert a ThermalProfile to serializable ThermalProfileData.
+pub fn to_profile_data(profile: &ThermalProfile) -> tpt_core::ThermalProfileData {
+    tpt_core::ThermalProfileData {
+        name: profile.name.clone(),
+        segments: profile
+            .segments
+            .iter()
+            .map(|s| tpt_core::ThermalSegmentData {
+                temperature: s.temperature,
+                hold_time: s.hold_time,
+                ramp_rate: s.ramp_rate,
+            })
+            .collect(),
+    }
+}
+
+/// Convert serializable ThermalProfileData back to a ThermalProfile.
+pub fn from_profile_data(data: &tpt_core::ThermalProfileData) -> ThermalProfile {
+    ThermalProfile {
+        name: data.name.clone(),
+        segments: data
+            .segments
+            .iter()
+            .map(|s| ThermalSegment {
+                temperature: s.temperature,
+                hold_time: s.hold_time,
+                ramp_rate: s.ramp_rate,
+            })
+            .collect(),
+    }
+}
+
 /// Generate a G-code style list of M301 (thermal profiling) commands for the
 /// given profile, suitable for the Klipper M301 extension described in the spec.
 pub fn profile_to_m301(profile: &ThermalProfile) -> Vec<String> {
@@ -164,5 +198,29 @@ mod tests {
         let cmds = profile_to_m301(&p);
         assert_eq!(cmds.len(), 3);
         assert!(cmds[0].starts_with("M301 T45.0"));
+    }
+
+    #[test]
+    fn test_thermal_profile_roundtrip() {
+        let original = dark_chocolate_tempering();
+        let data = to_profile_data(&original);
+        let restored = from_profile_data(&data);
+        assert_eq!(original.name, restored.name);
+        assert_eq!(original.segments.len(), restored.segments.len());
+        for (a, b) in original.segments.iter().zip(restored.segments.iter()) {
+            assert_eq!(a.temperature, b.temperature);
+            assert_eq!(a.hold_time, b.hold_time);
+            assert_eq!(a.ramp_rate, b.ramp_rate);
+        }
+    }
+
+    #[test]
+    fn test_thermal_profile_json_roundtrip() {
+        let original = milk_chocolate_tempering();
+        let data = to_profile_data(&original);
+        let json = serde_json::to_string(&data).unwrap();
+        let restored_data: tpt_core::ThermalProfileData = serde_json::from_str(&json).unwrap();
+        let restored = from_profile_data(&restored_data);
+        assert_eq!(original.segments.len(), restored.segments.len());
     }
 }

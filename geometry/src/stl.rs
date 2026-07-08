@@ -3,7 +3,7 @@
 
 use crate::mesh::{Mesh, Triangle};
 use nalgebra::Point3;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, Cursor, Read, Write};
 use std::path::Path;
 use thiserror::Error;
 
@@ -122,6 +122,41 @@ fn import_binary_stl<R: BufRead>(reader: R) -> Result<Mesh, StlError> {
     }
 
     Ok(mesh)
+}
+
+/// Convert a Mesh to GeometryData (serialized as ASCII STL bytes).
+pub fn mesh_to_geometry_data(mesh: &Mesh) -> tpt_core::GeometryData {
+    let mut buf = Vec::new();
+    // Write ASCII STL into the buffer
+    writeln!(buf, "solid tpt-biocad").unwrap();
+    for tri in &mesh.triangles {
+        writeln!(
+            buf,
+            "  facet normal {} {} {}",
+            tri.normal.x, tri.normal.y, tri.normal.z
+        )
+        .unwrap();
+        writeln!(buf, "    outer loop").unwrap();
+        writeln!(buf, "      vertex {} {} {}", tri.v1.x, tri.v1.y, tri.v1.z).unwrap();
+        writeln!(buf, "      vertex {} {} {}", tri.v2.x, tri.v2.y, tri.v2.z).unwrap();
+        writeln!(buf, "      vertex {} {} {}", tri.v3.x, tri.v3.y, tri.v3.z).unwrap();
+        writeln!(buf, "    endloop").unwrap();
+        writeln!(buf, "  endfacet").unwrap();
+    }
+    writeln!(buf, "endsolid tpt-biocad").unwrap();
+
+    tpt_core::GeometryData {
+        format: tpt_core::GeometryFormat::Stl,
+        data: buf,
+    }
+}
+
+/// Convert GeometryData back to a Mesh (reads the STL bytes from the data field).
+pub fn geometry_data_to_mesh(data: &tpt_core::GeometryData) -> Result<Mesh, String> {
+    let cursor = Cursor::new(&data.data);
+    let reader = std::io::BufReader::new(cursor);
+    // Use the existing import logic (detect ASCII vs binary)
+    import_ascii_stl(reader).map_err(|e| e.to_string())
 }
 
 /// Export mesh to ASCII STL format

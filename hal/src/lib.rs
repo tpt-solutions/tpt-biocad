@@ -6,9 +6,15 @@
 // extruders. Klipper is the primary firmware target.
 
 pub mod commands;
+pub mod feedback;
+pub mod firmware;
+pub mod monitoring;
 pub mod serial;
 
 pub use commands::*;
+pub use feedback::*;
+pub use firmware::*;
+pub use monitoring::*;
 pub use serial::*;
 
 use thiserror::Error;
