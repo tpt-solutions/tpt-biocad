@@ -26,17 +26,18 @@ pub struct ThermalProfile {
 impl ThermalProfile {
     /// Total duration of the profile in seconds.
     pub fn total_time(&self) -> f64 {
-        self.segments
-            .iter()
-            .map(|s| {
-                s.hold_time
-                    + if s.ramp_rate > 0.0 {
-                        s.temperature.abs() / s.ramp_rate
-                    } else {
-                        0.0
-                    }
-            })
-            .sum()
+        let mut prev_temp = 0.0;
+        let mut total = 0.0;
+        for s in &self.segments {
+            let ramp_time = if s.ramp_rate > 0.0 {
+                (s.temperature - prev_temp).abs() / s.ramp_rate
+            } else {
+                0.0
+            };
+            total += ramp_time + s.hold_time;
+            prev_temp = s.temperature;
+        }
+        total
     }
 
     /// Peak temperature reached by the profile (°C).
@@ -48,20 +49,31 @@ impl ThermalProfile {
     }
 
     /// Sample the target temperature at time `t` (s) into the profile.
-    /// Returns the segment temperature once the ramp (if any) is complete.
+    /// Interpolates linearly during ramp phases.
     pub fn temperature_at(&self, t: f64) -> f64 {
         let mut elapsed = 0.0;
+        let mut prev_temp = 0.0;
         for seg in &self.segments {
             let ramp_time = if seg.ramp_rate > 0.0 {
-                seg.temperature.abs() / seg.ramp_rate
+                (seg.temperature - prev_temp).abs() / seg.ramp_rate
             } else {
                 0.0
             };
-            let seg_duration = ramp_time + seg.hold_time;
-            if t <= elapsed + seg_duration {
+
+            // During ramp phase: interpolate from prev_temp to seg.temperature
+            if ramp_time > 0.0 && t <= elapsed + ramp_time {
+                let frac = (t - elapsed) / ramp_time;
+                return prev_temp + frac * (seg.temperature - prev_temp);
+            }
+            elapsed += ramp_time;
+
+            // During hold phase: constant at seg.temperature
+            if t <= elapsed + seg.hold_time {
                 return seg.temperature;
             }
-            elapsed += seg_duration;
+            elapsed += seg.hold_time;
+
+            prev_temp = seg.temperature;
         }
         // Past the end: hold final temperature.
         self.segments.last().map(|s| s.temperature).unwrap_or(0.0)
@@ -137,8 +149,11 @@ mod tests {
         let p = dark_chocolate_tempering();
         assert!(p.peak_temperature() > 40.0);
         assert!(p.total_time() > 0.0);
-        // At t=0 we are ramping toward the first segment temperature.
-        assert_eq!(p.temperature_at(0.0), 45.0);
+        // At t=0 we start ramping from 0 toward the first segment (45°C).
+        // With ramp_rate=2.0, at t=0 we should be at 0 (start of ramp from 0).
+        assert_eq!(p.temperature_at(0.0), 0.0);
+        // After the first ramp completes (45/2 = 22.5s), should be at 45°C.
+        assert_eq!(p.temperature_at(22.5), 45.0);
         // Well past the end, holds final temperature.
         assert_eq!(p.temperature_at(p.total_time() + 100.0), 31.0);
     }

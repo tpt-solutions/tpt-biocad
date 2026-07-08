@@ -50,3 +50,36 @@ Tracks work derived from `spec.txt` (Section 8 Roadmap, plus items added during 
 - [ ] Track opencascade-rs maturity/issues as integration deepens
 - [ ] Acquire physical hardware (printer + rheometer) to move validation from literature-based to empirical
 - [ ] Marlin/RepRapFirmware support for M300-M303 (post-Klipper, community-contributed)
+
+## Phase 5: Polish & Quality (Months 13-14)
+- [ ] Replace triangle-plane intersection with Sutherland-Hodgman polygon clipping for correct layer outlines
+- [ ] Implement geometry.json read/write in TptProject (currently dead code)
+- [ ] Serialize ThermalProfile for .tpt persistence
+- [ ] Multi-material slicer support (different materials per region)
+- [ ] Print time estimation from toolpath commands
+- [ ] Material profile CSV import for custom rheometer data
+- [ ] Input validation on all physical parameters (solver, UI, HAL)
+- [ ] Error propagation: solver errors surface as user-visible warnings, not silent skips
+
+## Phase 6: UI & Visualization (Months 15-16)
+- [ ] WebGL/Three.js 3D viewport replacing flat HTML
+- [ ] Real-time toolpath preview with layer-by-layer animation
+- [ ] Slumping overlay in 3D (color map per bead)
+- [ ] Undo/redo for all operations (command pattern)
+- [ ] Material property editor with live viscosity curve plot
+- [ ] G-code preview with syntax highlighting and line-by-line stepping
+
+## Phase 7: Intelligence & Automation (Months 17-18)
+- [ ] AI-assisted print parameter selection from geometry + material properties
+- [ ] Simulation mode: run slumping model across all layers to predict final part geometry
+- [ ] Real-time pressure/temperature feedback loop from printer to adjust parameters mid-print
+- [ ] Print queue management with priority scheduling
+- [ ] Quality monitoring: detect under-extrusion, stringing, layer shifts from sensor data
+
+## Future / Community
+- [ ] 5-axis toolpath generation for curved mandrels (vascular bioprinting)
+- [ ] B-Rep CAD kernel integration via opencascade-rs
+- [ ] Marlin/RepRapFirmware M300-M303 support
+- [ ] Multi-user collaborative .tpt editing via WebSocket
+- [ ] Plugin system for custom rheology models
+- [ ] Export to 3MF format with material metadata

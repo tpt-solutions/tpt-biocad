@@ -38,7 +38,9 @@ pub enum GCodeCommand {
         u: f64,
         t: f64,
     }, // UV curing
-    M303, // Coaxial cross-linker
+    M303 {
+        s: Option<i32>,
+    }, // Coaxial cross-linker (S0=off, S1=on, None=toggle)
 }
 
 /// G-code generator
@@ -99,7 +101,10 @@ impl GCodeGenerator {
             GCodeCommand::M300 { s, p } => format!("M300 S{:.0} P{:.0}", s, p),
             GCodeCommand::M301 { t, r } => format!("M301 T{:.0} R{:.1}", t, r),
             GCodeCommand::M302 { u, t } => format!("M302 U{:.0} T{:.0}", u, t),
-            GCodeCommand::M303 => "M303".to_string(),
+            GCodeCommand::M303 { s } => match s {
+                Some(val) => format!("M303 S{}", val),
+                None => "M303".to_string(),
+            },
         };
         self.commands.push(line);
     }
@@ -169,7 +174,7 @@ impl GCodeGenerator {
                     });
                 }
                 ToolpathCommand::CoaxialFlow => {
-                    self.add(GCodeCommand::M303);
+                    self.add(GCodeCommand::M303 { s: None });
                 }
             }
         }

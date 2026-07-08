@@ -88,7 +88,7 @@ pub fn linear_move(
 
 /// Build extrusion commands appropriate for the given extruder type.
 ///
-/// For pneumatic extruders, uses M300 pressure control.
+/// For pneumatic extruders, uses M300 pressure control with a timed release.
 /// For screw/piston extruders, uses G1 E-axis commands.
 pub fn extruder_command(
     extruder: &ExtruderType,
@@ -98,10 +98,15 @@ pub fn extruder_command(
 ) -> Vec<String> {
     match extruder {
         ExtruderType::Pneumatic => {
+            // Estimate extrusion time from distance and speed
+            let extrusion_time_ms = if speed_mm_s > 0.0 {
+                (distance_mm / speed_mm_s * 1000.0).ceil()
+            } else {
+                500.0 // default 500ms if speed is zero
+            };
             vec![
-                pneumatic_pressure(pressure_kpa, 0.0),
+                pneumatic_pressure(pressure_kpa, extrusion_time_ms + 100.0),
                 extrude(distance_mm, speed_mm_s),
-                pneumatic_pressure(0.0, 0.0), // release pressure
             ]
         }
         ExtruderType::Piston | ExtruderType::Screw => {
@@ -163,10 +168,10 @@ mod tests {
     #[test]
     fn test_extruder_pneumatic() {
         let cmds = extruder_command(&ExtruderType::Pneumatic, 100.0, 1.0, 10.0);
-        assert_eq!(cmds.len(), 3);
+        assert_eq!(cmds.len(), 2);
+        // M300 with timed release (extrusion time + 100ms buffer)
         assert!(cmds[0].starts_with("M300 S100"));
         assert!(cmds[1].starts_with("G1 E1.0"));
-        assert!(cmds[2].starts_with("M300 S0"));
     }
 
     #[test]

@@ -46,6 +46,20 @@ pub fn solve_pressure(
     target_flow_rate: f64,  // mm³/s
     _ambient_pressure: f64, // Pa (reserved for absolute-pressure reporting)
 ) -> Result<FlowResult, &'static str> {
+    // Validate geometry
+    if geometry.outlet_diameter <= 0.0 {
+        return Err("outlet diameter must be positive");
+    }
+    if geometry.length <= 0.0 {
+        return Err("nozzle length must be positive");
+    }
+    if geometry.inlet_diameter <= 0.0 {
+        return Err("inlet diameter must be positive");
+    }
+    if target_flow_rate < 0.0 {
+        return Err("flow rate must be non-negative");
+    }
+
     // Convert flow rate to m³/s
     let q = target_flow_rate * 1e-9;
 

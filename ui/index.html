@@ -113,11 +113,18 @@
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 const materials = await window.__TAURI__.invoke('get_materials');
-                document.getElementById('materials').innerHTML = materials.map(m => 
-                    `<div class="material-item" onclick="selectMaterial('${m}')">${m}</div>`
-                ).join('');
+                const container = document.getElementById('materials');
+                container.innerHTML = '';
+                materials.forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = 'material-item';
+                    div.textContent = m;
+                    div.dataset.material = m;
+                    div.addEventListener('click', () => selectMaterial(m));
+                    container.appendChild(div);
+                });
             } catch (e) {
-                document.getElementById('materials').innerHTML = 'Error loading materials';
+                document.getElementById('materials').textContent = 'Error loading materials';
             }
         });
 

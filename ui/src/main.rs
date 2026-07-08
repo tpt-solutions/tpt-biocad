@@ -41,6 +41,13 @@ fn calculate_pressure(
     flow_rate: f64,
     nozzle_diameter: f64,
 ) -> Result<tpt_fluid::FlowResult, String> {
+    if flow_rate < 0.0 {
+        return Err("flow rate must be non-negative".to_string());
+    }
+    if nozzle_diameter <= 0.0 {
+        return Err("nozzle diameter must be positive".to_string());
+    }
+
     let material =
         tpt_fluid::get_material(material_name).ok_or_else(|| "Material not found".to_string())?;
 
@@ -92,6 +99,16 @@ fn calculate_slump(
     print_speed: f64,
     layer_time: f64,
 ) -> Result<SlumpInfo, String> {
+    if initial_width <= 0.0 {
+        return Err("bead width must be positive".to_string());
+    }
+    if initial_height <= 0.0 {
+        return Err("bead height must be positive".to_string());
+    }
+    if layer_time < 0.0 {
+        return Err("layer time must be non-negative".to_string());
+    }
+
     let material =
         tpt_fluid::get_material(material_name).ok_or_else(|| "Material not found".to_string())?;
     let result = tpt_fluid::predict_slump(

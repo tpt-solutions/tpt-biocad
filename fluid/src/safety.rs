@@ -58,12 +58,17 @@ pub fn evaluate_step(
     let mut warnings = Vec::new();
 
     // Wall shear stress from the 1D solver.
-    if let Ok(result) = solve_pressure(model, geometry, flow_rate, 101325.0) {
-        if result.wall_shear_stress > limits.max_wall_shear_stress {
-            warnings.push(format!(
-                "wall shear stress {:.1} Pa exceeds limit {:.1} Pa",
-                result.wall_shear_stress, limits.max_wall_shear_stress
-            ));
+    match solve_pressure(model, geometry, flow_rate, 101325.0) {
+        Ok(result) => {
+            if result.wall_shear_stress > limits.max_wall_shear_stress {
+                warnings.push(format!(
+                    "wall shear stress {:.1} Pa exceeds limit {:.1} Pa",
+                    result.wall_shear_stress, limits.max_wall_shear_stress
+                ));
+            }
+        }
+        Err(e) => {
+            warnings.push(format!("could not compute wall shear stress: {}", e));
         }
     }
 
@@ -114,9 +119,10 @@ mod tests {
 
     #[test]
     fn test_safe_step() {
-        let model = RheologyModel::Newtonian { viscosity: 1.0 };
+        // Use a low flow rate and low viscosity so wall shear stress stays below limit.
+        let model = RheologyModel::Newtonian { viscosity: 0.01 };
         let limits = SafetyLimits::default();
-        let status = evaluate_step(&model, &geometry(), 50.0, &limits, 25.0, 1.0);
+        let status = evaluate_step(&model, &geometry(), 1.0, &limits, 25.0, 1.0);
         assert_eq!(status, SafetyStatus::Ok);
     }
 

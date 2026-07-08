@@ -53,7 +53,7 @@ fn r_squared(model: &RheologyModel, data: &[DataPoint]) -> f64 {
     if ss_tot == 0.0 {
         1.0
     } else {
-        1.0 - ss_res / ss_tot
+        (1.0 - ss_res / ss_tot).clamp(0.0, 1.0)
     }
 }
 
