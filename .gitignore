@@ -29,3 +29,7 @@ Thumbs.db
 
 # TPT project files
 *.tpt
+klipper/__pycache__/tpt_biocad.cpython-312.pyc
+.mimocode/plans/1783501176421-clever-orchid.md
+.mimocode/.cron-lock
+c
