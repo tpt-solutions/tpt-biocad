@@ -15,7 +15,7 @@ Tracks work derived from `spec.txt` (Section 8 Roadmap, plus items added during 
 - [x] Implement basic UI shell
 - [x] Implement STL import/export
 - [x] Develop basic 3-axis slicer for standard thermoplastics (baseline)
-- [ ] Spike: integrate `opencascade-rs` minimally to de-risk the CAD kernel dependency
+- [x] Spike: integrate `opencascade-rs` minimally to de-risk the CAD kernel dependency (`geometry/src/brep.rs`)
 
 ## Phase 2: The Fluid Solver (Months 4-7)
 - [x] Implement Carreau-Yasuda rheological model
@@ -49,7 +49,7 @@ Tracks work derived from `spec.txt` (Section 8 Roadmap, plus items added during 
 - [ ] Confirm OpenCASCADE (LGPL-2.1 + exception) licensing compatibility before binary distribution
 - [ ] Track opencascade-rs maturity/issues as integration deepens
 - [ ] Acquire physical hardware (printer + rheometer) to move validation from literature-based to empirical
-- [ ] Marlin/RepRapFirmware support for M300-M303 (post-Klipper, community-contributed)
+- [x] Marlin/RepRapFirmware support for M300-M303 (post-Klipper, community-contributed) — `marlin/`, `reprap/`, `hal/src/firmware.rs`
 
 ## Phase 5: Polish & Quality (Months 13-14)
 - [x] Replace triangle-plane intersection with Sutherland-Hodgman polygon clipping for correct layer outlines
@@ -62,12 +62,12 @@ Tracks work derived from `spec.txt` (Section 8 Roadmap, plus items added during 
 - [x] Error propagation: solver errors surface as user-visible warnings, not silent skips
 
 ## Phase 6: UI & Visualization (Months 15-16)
-- [ ] WebGL/Three.js 3D viewport replacing flat HTML
-- [ ] Real-time toolpath preview with layer-by-layer animation
-- [ ] Slumping overlay in 3D (color map per bead)
-- [ ] Undo/redo for all operations (command pattern)
-- [ ] Material property editor with live viscosity curve plot
-- [ ] G-code preview with syntax highlighting and line-by-line stepping
+- [x] WebGL/Three.js 3D viewport replacing flat HTML (`ui/src/viewport/index.ts`)
+- [x] Real-time toolpath preview with layer-by-layer animation (`ui/src/toolpath/index.ts`)
+- [x] Slumping overlay in 3D (color map per bead) (`ui/src/viewport/index.ts`)
+- [x] Undo/redo for all operations (command pattern) (`ui/src/undo/index.ts`)
+- [x] Material property editor with live viscosity curve plot (`ui/src/material/index.ts`)
+- [x] G-code preview with syntax highlighting and line-by-line stepping (`ui/src/gcode/index.ts`)
 
 ## Phase 7: Intelligence & Automation (Months 17-18)
 - [x] AI-assisted print parameter selection from geometry + material properties
@@ -96,8 +96,8 @@ Tracks work derived from `spec.txt` (Section 8 Roadmap, plus items added during 
 - [x] TypeScript: wrappers in `ui/src/tauri-api.ts`, types in `ui/src/types.ts`, handlers in `ui/src/main.ts`
 
 ## Future / Community
-- [ ] 5-axis toolpath generation for curved mandrels (vascular bioprinting)
-- [ ] B-Rep CAD kernel integration via opencascade-rs
-- [ ] Marlin/RepRapFirmware M300-M303 support
-- [ ] Plugin system for custom rheology models
-- [ ] Export to 3MF format with material metadata
+- [x] 5-axis toolpath generation for curved mandrels (vascular bioprinting) — `slice/src/five_axis.rs`
+- [x] B-Rep CAD kernel integration via opencascade-rs — `geometry/src/brep.rs`
+- [x] Marlin/RepRapFirmware M300-M303 support — `marlin/`, `reprap/`, `hal/src/firmware.rs`
+- [x] Plugin system for custom rheology models — `fluid/src/plugin.rs`
+- [x] Export to 3MF format with material metadata — `geometry/src/three_mf.rs`

@@ -888,6 +888,7 @@ struct QualityAlertInfo {
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 fn quality_feed(
     state: State<MonitorState>,
     pressure_kpa: f64,
